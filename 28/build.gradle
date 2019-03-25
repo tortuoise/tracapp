@@ -1,0 +1,40 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 'android-28'
+    buildToolsVersion '28.0.3'
+    defaultConfig{
+        minSdkVersion 21
+        targetSdkVersion 28
+	multiDexEnabled true
+    }
+    signingConfigs {
+        release {
+            storeFile file(RELEASE_STORE_FILE)
+            storePassword RELEASE_STORE_PASSWORD
+            keyAlias RELEASE_KEY_ALIAS
+            keyPassword RELEASE_KEY_PASSWORD
+        }
+    }
+    buildTypes {
+        release {
+	    signingConfig signingConfigs.release
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'),
+                    'proguard-rules.pro'
+            //runProguard false
+            //proguardFile getDefaultProguardFile('proguard-android.txt')
+        }
+    }
+}
+dependencies {
+    //implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support:appcompat-v7:28.0.0'
+    implementation 'com.android.support:support-media-compat:28.0.0'
+    implementation 'com.android.support:support-v4:28.0.0'
+    implementation ('com.google.android.gms:play-services-maps:16.1.0') //{
+	//exclude group: 'com.android.support'
+    	//exclude module: 'appcompat-v7'
+    	//exclude module: 'support-v4'	
+    //}
+}
