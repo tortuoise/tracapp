@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Trac</string>
+    <string name="post_current">Save</string>
+    <string name="get_last">Get</string>
 </resources>

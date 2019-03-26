@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+option go_package = "pb";
+option java_multiple_files = true;
+option java_package = "org.trac.app";
+option java_outer_classname = "TracProto";
+option objc_class_prefix = "RTG";
+
+package trac;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "route_guide.proto";
+
+message TimePeriod {
+	google.protobuf.Timestamp start =1;
+	google.protobuf.Timestamp end =2;
+}
+// Pointys are represented as latitude-longitude pairs in the E7 representation
+// (degrees multiplied by 10**7 and rounded to the nearest integer).
+// Latitudes should be in the range +/- 90 degrees and longitude should be in
+// the range +/- 180 degrees (inclusive).
+//message Pointy {
+//	int32 latitude = 1;
+//	int32 longitude = 2;
+//}
+
+message Coordinate {
+	float altitude = 1;
+	routeguide.Point point = 2;
+}
+
+message CoordinateRequest {
+	int64 user = 1;
+	int64 id = 2;
+}
+
+message Track {
+	int64 id = 1;
+	repeated Coordinate coords = 2;
+}
+
+message TrackRequest {
+	int64 user = 1;
+	//oneof trackfilter {
+	TimePeriod period = 2;
+	string track = 3;
+	//}
+}
+
+message WrappedCoordinate {
+	int64 user = 1; // mapped to url in post
+	int64 id = 2; // mapped to url in post
+	Coordinate coord = 3; // mapped to body in post
+	google.protobuf.Timestamp timestamp_value = 4;
+	string track = 5;
+}
+
+service Trac {
+	rpc Post(WrappedCoordinate) returns (google.protobuf.Empty){ 
+		option (google.api.http) = {
+			post: "/v1/trac"
+			body: "*"
+		};
+	}
+	rpc GetLast(CoordinateRequest) returns (Coordinate) {
+		option (google.api.http) = {
+			get: "/v1/trac/{user}"
+			/*additional_bindings {
+				get: "/v1/trac/{user}/{id}"
+			}*/
+		};
+	}
+	rpc Get(TrackRequest) returns (Track){ 
+		option (google.api.http) = {
+			get: "/v1/trac/list/{user}"
+		};
+	};
+}
