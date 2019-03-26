@@ -77,6 +77,9 @@ Then add it something like this to `AndroidManifest.xml`:
 ```
 And the corresponding `app/src/main/res/values/styles.xml`
 
+
+Using `com.google.protobuf:protobuf-gradle-plugin:0.8.5` may lead to `No such property: javaCompilerTask for class: com.android.build.gradle.internal.variant.TestVariantData`. Upgrade to 0.8.6 to solve.
+
 ### [References](#references)
 + [routeguide](https://github.com/grpc/grpc-java/examples/android/routeguide)
 + [MapWithMarker](https://github.com/googlesamples/android-samples/tutorials/MapWithMarker) 
