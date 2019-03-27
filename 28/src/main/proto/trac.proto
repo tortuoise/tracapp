@@ -21,14 +21,15 @@ message TimePeriod {
 // (degrees multiplied by 10**7 and rounded to the nearest integer).
 // Latitudes should be in the range +/- 90 degrees and longitude should be in
 // the range +/- 180 degrees (inclusive).
-//message Pointy {
-//	int32 latitude = 1;
-//	int32 longitude = 2;
-//}
+message Pointf {
+	float latitude = 1;
+	float longitude = 2;
+}
 
 message Coordinate {
 	float altitude = 1;
-	routeguide.Point point = 2;
+	Pointf point =2;
+	//routeguide.Point point = 2;
 }
 
 message CoordinateRequest {

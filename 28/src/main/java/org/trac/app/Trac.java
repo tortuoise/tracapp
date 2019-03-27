@@ -205,7 +205,7 @@ public class Trac extends AppCompatActivity
       StringBuffer logs = new StringBuffer();
       //appendLogs(logs, "*** Post: ");
 
-      Point point = Point.newBuilder().setLatitude((int)latitude).setLongitude((int)longitude).build();
+      Pointf point = Pointf.newBuilder().setLatitude((float)latitude).setLongitude((float)longitude).build();
       Coordinate coordinate = Coordinate.newBuilder().setAltitude((float)altitude).setPoint(point).build();
       WrappedCoordinate request = WrappedCoordinate.newBuilder().setUser(1).setCoord(coordinate).build();
 
