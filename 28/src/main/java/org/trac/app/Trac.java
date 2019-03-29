@@ -32,11 +32,29 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.maps.model.CustomCap;
+import com.google.android.gms.maps.model.RoundCap;
+import com.google.android.gms.maps.model.JointType;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 
 public class Trac extends AppCompatActivity
         implements OnMapReadyCallback 
 {
+    private static final int COLOR_BLACK_ARGB = 0xff000000;
+    private static final int COLOR_WHITE_ARGB = 0xffffffff;
+    private static final int COLOR_GREEN_ARGB = 0xff388E3C;
+    private static final int COLOR_PURPLE_ARGB = 0xff81C784;
+    private static final int COLOR_ORANGE_ARGB = 0xffF57F17;
+    private static final int COLOR_BLUE_ARGB = 0xffF9A825;
+
+    private static final int POLYLINE_STROKE_WIDTH_PX = 12;
+    private static final int POLYGON_STROKE_WIDTH_PX = 8;
+    private static final int PATTERN_DASH_LENGTH_PX = 20;
+    private static final int PATTERN_GAP_LENGTH_PX = 20;
     private static final int REQUEST_LOCATION_PERMISSION = 1;
+
     private GoogleMap mMap;
     private ManagedChannel channel;
     public static double latitude;
@@ -83,6 +101,23 @@ public class Trac extends AppCompatActivity
                 new GrpcTask1(new PostRunnable(), channel, this).execute();
                 return true;
             case R.id.get_last:
+                new GrpcTask1(new GetLastRunnable(), channel, this).execute();
+                Polyline polyline1 = mMap.addPolyline(new PolylineOptions()
+                .clickable(true)
+                .add(
+                        new LatLng(-35.016, 143.321),
+                        new LatLng(-34.747, 145.592),
+                        new LatLng(-34.364, 147.891),
+                        new LatLng(-33.501, 150.217),
+                        new LatLng(-32.306, 149.248),
+                        new LatLng(-32.491, 147.309)));
+                // Store a data object with the polyline, used here to indicate an arbitrary type.
+                polyline1.setTag("A");
+                // Style the polyline.
+                stylePolyline(polyline1);
+                return true;
+            case R.id.clear:
+                mMap.clear();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -221,4 +256,34 @@ public class Trac extends AppCompatActivity
       return logs.toString();
     }
   }
+    /**
+     * Styles the polyline, based on type.
+     * @param polyline The polyline object that needs styling.
+     */
+    private void stylePolyline(Polyline polyline) {
+        String type = "";
+        // Get the data object stored with the polyline.
+        if (polyline.getTag() != null) {
+            type = polyline.getTag().toString();
+        }
+
+        switch (type) {
+            // If no type is given, allow the API to use the default.
+            case "A":
+                // Use a custom bitmap as the cap at the start of the line.
+                polyline.setStartCap(
+                        new CustomCap(
+                                BitmapDescriptorFactory.fromResource(R.drawable.ic_arrow), 10));
+                break;
+            case "B":
+                // Use a round cap at the start of the line.
+                polyline.setStartCap(new RoundCap());
+                break;
+        }
+
+        polyline.setEndCap(new RoundCap());
+        polyline.setWidth(POLYLINE_STROKE_WIDTH_PX);
+        polyline.setColor(COLOR_BLACK_ARGB);
+        polyline.setJointType(JointType.ROUND);
+    }
 }
