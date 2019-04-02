@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.os.AsyncTask;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.DialogFragment;
 import android.content.pm.PackageManager;
 import android.support.v7.app.AppCompatActivity;
 
@@ -25,6 +26,8 @@ import org.trac.app.TracGrpc.TracStub;
 import java.lang.ref.WeakReference;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.List;
+import java.util.ArrayList;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -40,7 +43,7 @@ import com.google.android.gms.maps.model.JointType;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 
 public class Trac extends AppCompatActivity
-        implements OnMapReadyCallback 
+    implements OnMapReadyCallback 
 {
     private static final int COLOR_BLACK_ARGB = 0xff000000;
     private static final int COLOR_WHITE_ARGB = 0xffffffff;
@@ -83,7 +86,8 @@ public class Trac extends AppCompatActivity
             bearing = location.getBearing();
         }
         }
-        channel = ManagedChannelBuilder.forAddress("192.168.0.15", 9090).usePlaintext().build();
+        //channel = ManagedChannelBuilder.forAddress("192.168.0.15", 9090).usePlaintext().build();
+        channel = ManagedChannelBuilder.forAddress("35.246.126.109", 9090).usePlaintext().build();
     }
 
     @Override
@@ -101,7 +105,14 @@ public class Trac extends AppCompatActivity
                 new GrpcTask1(new PostRunnable(), channel, this).execute();
                 return true;
             case R.id.get_last:
-                new GrpcTask1(new GetLastRunnable(), channel, this).execute();
+                return true;
+            case R.id.start_trac:
+                confirmStart();
+                return true;
+            case R.id.stop_trac:
+                return true;
+            case R.id.get_trac:
+                /*new GrpcTask1(new GetLastRunnable(), channel, this).execute();
                 Polyline polyline1 = mMap.addPolyline(new PolylineOptions()
                 .clickable(true)
                 .add(
@@ -115,6 +126,10 @@ public class Trac extends AppCompatActivity
                 polyline1.setTag("A");
                 // Style the polyline.
                 stylePolyline(polyline1);
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(-23.684, 133.903), 4));
+                */
+                TrackRequest tr = TrackRequest.newBuilder().setUser(1).setTrack("lebu").build();
+                new GetTrack().execute(tr);
                 return true;
             case R.id.clear:
                 mMap.clear();
@@ -161,101 +176,130 @@ public class Trac extends AppCompatActivity
         }
     }
 
-  private static class GrpcTask1 extends AsyncTask<Void, Void, String> {
-    private final GrpcRunnable1 grpcRunnable;
-    private final ManagedChannel channel;
-    private final WeakReference<Trac> activityReference;
-
-    GrpcTask1(GrpcRunnable1 grpcRunnable, ManagedChannel channel, Trac activity) {
-      this.grpcRunnable = grpcRunnable;
-      this.channel = channel;
-      this.activityReference = new WeakReference<Trac>(activity);
+    public void confirmStart() {
+        DialogFragment newFragment = new TracDialog();
+        newFragment.show(getSupportFragmentManager(), "startrack");
     }
 
-    @Override
-    protected String doInBackground(Void... nothing) {
-      try {
-        String logs =
-            grpcRunnable.run(
-                TracGrpc.newBlockingStub(channel), TracGrpc.newStub(channel));
-        return "Success!\n" + logs;
-      } catch (Exception e) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        e.printStackTrace(pw);
-        pw.flush();
-        return "Failed... :\n" + sw;
-      }
+    private static class GrpcTask1 extends AsyncTask<Void, Void, String> {
+        private final GrpcRunnable1 grpcRunnable;
+        private final ManagedChannel channel;
+        private final WeakReference<Trac> activityReference;
+
+        GrpcTask1(GrpcRunnable1 grpcRunnable, ManagedChannel channel, Trac activity) {
+          this.grpcRunnable = grpcRunnable;
+          this.channel = channel;
+          this.activityReference = new WeakReference<Trac>(activity);
+        }
+
+        @Override
+        protected String doInBackground(Void... nothing) {
+          try {
+            String logs =
+                grpcRunnable.run(
+                    TracGrpc.newBlockingStub(channel), TracGrpc.newStub(channel));
+            return "Success!\n" + logs;
+          } catch (Exception e) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            pw.flush();
+            return "Failed... :\n" + sw;
+          }
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+          Trac activity = activityReference.get();
+          if (activity == null) {
+            return;
+          }
+          //activity.setResultText(result);
+          //activity.enableButtons();
+        }
     }
 
-    @Override
-    protected void onPostExecute(String result) {
-      Trac activity = activityReference.get();
-      if (activity == null) {
-        return;
-      }
-      //activity.setResultText(result);
-      //activity.enableButtons();
+    private interface GrpcRunnable1 {
+        /** Perform a grpcRunnable and return all the logs. */
+        String run(TracBlockingStub blockingStub, TracStub asyncStub) throws Exception;
     }
-  }
 
-  private interface GrpcRunnable1 {
-    /** Perform a grpcRunnable and return all the logs. */
-    String run(TracBlockingStub blockingStub, TracStub asyncStub) throws Exception;
-  }
+    private static class GetLastRunnable implements GrpcRunnable1 {
+        @Override
+        public String run(TracBlockingStub blockingStub, TracStub asyncStub)
+            throws Exception {
+            return getLast(blockingStub);
+        }
+        private String getLast(TracBlockingStub blockingStub)
+            throws StatusRuntimeException {
+            StringBuffer logs = new StringBuffer();
+            //appendLogs(logs, "*** GetLast: ");
 
-  private static class GetLastRunnable implements GrpcRunnable1 {
-    @Override
-    public String run(TracBlockingStub blockingStub, TracStub asyncStub)
-        throws Exception {
-      return getLast(blockingStub);
+            CoordinateRequest request = CoordinateRequest.newBuilder().setUser(1).setId(1).build();
+
+            Coordinate coordinate;
+            coordinate = blockingStub.getLast(request);
+            /*appendLogs(
+            logs,
+            "Last coordinate at \"{0}\" at {1}, {2}",
+            coordinate.getAltitude(),
+            coordinate.getPoint().getLatitude(),
+            coordinate.getPoint().getLongitude());*/
+            return logs.toString();
+        }
     }
-    private String getLast(TracBlockingStub blockingStub)
-        throws StatusRuntimeException {
-      StringBuffer logs = new StringBuffer();
-      //appendLogs(logs, "*** GetLast: ");
 
-      CoordinateRequest request = CoordinateRequest.newBuilder().setUser(1).setId(1).build();
+    private static class PostRunnable implements GrpcRunnable1 {
+        @Override
+        public String run(TracBlockingStub blockingStub, TracStub asyncStub)
+            throws Exception {
+            return postLast(blockingStub);
+        }
+        private String postLast(TracBlockingStub blockingStub)
+            throws StatusRuntimeException {
+            StringBuffer logs = new StringBuffer();
+            //appendLogs(logs, "*** Post: ");
 
-      Coordinate coordinate;
-      coordinate = blockingStub.getLast(request);
-      /*appendLogs(
-        logs,
-        "Last coordinate at \"{0}\" at {1}, {2}",
-        coordinate.getAltitude(),
-        coordinate.getPoint().getLatitude(),
-        coordinate.getPoint().getLongitude());*/
-      return logs.toString();
+            Pointf point = Pointf.newBuilder().setLatitude((float)latitude).setLongitude((float)longitude).build();
+            Coordinate coordinate = Coordinate.newBuilder().setAltitude((float)altitude).setPoint(point).build();
+            WrappedCoordinate request = WrappedCoordinate.newBuilder().setUser(1).setCoord(coordinate).build();
+
+            com.google.protobuf.Empty empty;
+            empty = blockingStub.post(request);
+            /*appendLogs(
+            logs,
+            "Posted \"{0}\" at {1}, {2}",
+            coordinate.getAltitude(),
+            coordinate.getPoint().getLatitude(),
+            coordinate.getPoint().getLongitude());
+            */
+            return logs.toString();
+        }
     }
-  }
 
-  private static class PostRunnable implements GrpcRunnable1 {
-    @Override
-    public String run(TracBlockingStub blockingStub, TracStub asyncStub)
-        throws Exception {
-      return postLast(blockingStub);
+    private class GetTrack extends AsyncTask<TrackRequest, Void, Track> {
+        protected Track doInBackground(TrackRequest... trs) {
+            int count = trs.length;
+            Track t ; 
+            t = TracGrpc.newBlockingStub(channel).get(trs[0]);
+            return t;
+        }
+        protected void onPostExecute(Track result) {
+            List<Coordinate> coords = result.getCoordsList();
+            ArrayList<LatLng> points = new ArrayList<LatLng>();
+            int cs = result.getCoordsCount();
+            if (cs > 0) {
+                for(Coordinate c : coords) {
+                    points.add(new LatLng(c.getPoint().getLatitude(), c.getPoint().getLongitude()));
+                }    
+            }
+            Polyline polyline1 = mMap.addPolyline(new PolylineOptions().clickable(true).addAll(points));
+            polyline1.setTag("A");
+            stylePolyline(polyline1);
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(points.get(0), 4));
+        }
     }
-    private String postLast(TracBlockingStub blockingStub)
-        throws StatusRuntimeException {
-      StringBuffer logs = new StringBuffer();
-      //appendLogs(logs, "*** Post: ");
 
-      Pointf point = Pointf.newBuilder().setLatitude((float)latitude).setLongitude((float)longitude).build();
-      Coordinate coordinate = Coordinate.newBuilder().setAltitude((float)altitude).setPoint(point).build();
-      WrappedCoordinate request = WrappedCoordinate.newBuilder().setUser(1).setCoord(coordinate).build();
-
-      com.google.protobuf.Empty empty;
-      empty = blockingStub.post(request);
-      /*appendLogs(
-        logs,
-        "Posted \"{0}\" at {1}, {2}",
-        coordinate.getAltitude(),
-        coordinate.getPoint().getLatitude(),
-        coordinate.getPoint().getLongitude());
-    */
-      return logs.toString();
-    }
-  }
     /**
      * Styles the polyline, based on type.
      * @param polyline The polyline object that needs styling.

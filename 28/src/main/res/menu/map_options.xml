@@ -22,6 +22,15 @@
     <item android:id="@+id/get_last"
         android:title="@string/get_last"
         app:showAsAction="never"/>
+    <item android:id="@+id/start_trac"
+        android:title="@string/start_trac"
+        app:showAsAction="never"/>
+    <item android:id="@+id/stop_trac"
+        android:title="@string/stop_trac"
+        app:showAsAction="never"/>
+    <item android:id="@+id/get_trac"
+        android:title="@string/get_trac"
+        app:showAsAction="never"/>
     <item android:id="@+id/clear"
         android:title="@string/clear"
         app:showAsAction="never"/>

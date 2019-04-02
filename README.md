@@ -1,19 +1,33 @@
 ## Contents
 - [Brief](#brief)
+- [Usage](#usage)
 - [Components](#components)
   - [grpc](#grpc)
   - [maps](#maps)
   - [sensors](#sensors)
-  - [Software](#software)
 - [Signing](#signing)
 - [Gotchas](#gotchas)
 - [References](#references)
 
 ### [Brief](#brief)
 
-Trac - demo with maps, location \& sensors using grpc.
+Trac - demo with maps, location \& sensors using gRPC.
+
+### [Usage](#usage)
+
++ Login/Register
+
++ Post (Current): saves current location data as one-off with no trac name. Uses `android/os/AsyncTask`
+
++ Start (Trac) - enter string tracname to identify trac and frequency of location data saves. Uses `java.util.concurrent.Executor/ThreadPoolExecutor/FutureTask`
+
++ Stop (Trac) - stops saving location data with tracname.
+
++ Get Trac - enter string tracname to get - retreives locations data filtered by tracname ordered by timestamp and displays as polyline. 
 
 ### [Components](#components)
+
+
 
 ### [Signing](#signing)
 
