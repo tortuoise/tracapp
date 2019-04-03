@@ -6,6 +6,7 @@ import android.os.AsyncTask;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.DialogFragment;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.support.v7.app.AppCompatActivity;
 
@@ -13,10 +14,12 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.widget.EditText;
 
 import android.content.Context;
 import android.location.Location;
 import android.location.LocationManager;
+import android.location.LocationListener;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -43,8 +46,9 @@ import com.google.android.gms.maps.model.JointType;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 
 public class Trac extends AppCompatActivity
-    implements OnMapReadyCallback 
+    implements OnMapReadyCallback, TracDialog.TracDialogListener
 {
+    protected static final String TAG = "TRAC";
     private static final int COLOR_BLACK_ARGB = 0xff000000;
     private static final int COLOR_WHITE_ARGB = 0xffffffff;
     private static final int COLOR_GREEN_ARGB = 0xff388E3C;
@@ -58,6 +62,9 @@ public class Trac extends AppCompatActivity
     private static final int PATTERN_GAP_LENGTH_PX = 20;
     private static final int REQUEST_LOCATION_PERMISSION = 1;
 
+    protected static Intent intent; //= new Intent(this, TracService.class);
+    private LocationManager locationManager;
+    private LocationListener locationListener;
     private GoogleMap mMap;
     private ManagedChannel channel;
     public static double latitude;
@@ -74,20 +81,26 @@ public class Trac extends AppCompatActivity
         // when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-        LocationManager locationManager;
         Location location;
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (locationManager != null) {
             location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        if (location != null) {
-            latitude = location.getLatitude();
-            longitude = location.getLongitude();
-            altitude = location.getAltitude();
-            bearing = location.getBearing();
+            if (location != null) {
+                updateLocation(location);
+            }
         }
-        }
+        locationListener = new LocationListener() {
+            public void onLocationChanged(Location location) {
+                updateLocation(location);
+            }
+            public void onStatusChanged(String provider, int status, Bundle extras) {}
+            public void onProviderEnabled(String provider) {}
+            public void onProviderDisabled(String provider) {}
+        };
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
         //channel = ManagedChannelBuilder.forAddress("192.168.0.15", 9090).usePlaintext().build();
         channel = ManagedChannelBuilder.forAddress("35.246.126.109", 9090).usePlaintext().build();
+        intent = new Intent(this, TracService.class);
     }
 
     @Override
@@ -110,6 +123,7 @@ public class Trac extends AppCompatActivity
                 confirmStart();
                 return true;
             case R.id.stop_trac:
+                stopService(intent);
                 return true;
             case R.id.get_trac:
                 /*new GrpcTask1(new GetLastRunnable(), channel, this).execute();
@@ -174,6 +188,13 @@ public class Trac extends AppCompatActivity
                             {Manifest.permission.ACCESS_FINE_LOCATION},
                     REQUEST_LOCATION_PERMISSION);
         }
+    }
+
+    private void updateLocation(Location location) {
+        latitude = location.getLatitude();
+        longitude = location.getLongitude();
+        altitude = location.getAltitude();
+        bearing = location.getBearing();
     }
 
     public void confirmStart() {
@@ -330,4 +351,19 @@ public class Trac extends AppCompatActivity
         polyline.setColor(COLOR_BLACK_ARGB);
         polyline.setJointType(JointType.ROUND);
     }
+
+    @Override
+    //public void onDialogPositiveClick(DialogFragment dialog) {
+    public void onDialogPositiveClick(String tracname) {
+        //Intent intent = new Intent(this, TracService.class);
+        //String tracname = ((EditText)dialog.getView().findViewById(R.id.tracname)).getText().toString();
+        Log.v(TAG, "Trac Ok Clicked " + tracname);
+        intent.putExtra("tracname", tracname);
+        startService(intent);
+    }
+    @Override
+    public void onDialogNegativeClick(String tracname) {
+        Log.v(TAG, "Cancel Clicked");
+    }
+
 }
